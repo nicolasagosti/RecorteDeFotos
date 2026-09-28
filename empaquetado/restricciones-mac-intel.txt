@@ -1,0 +1,7 @@
+# Solo para armar la app de Mac con Intel (ver .github/workflows/app.yml).
+# onnxruntime, numba y llvmlite dejaron de publicar versiones para Mac con Intel:
+# estas son las últimas que las tienen. numba 0.62 además pide numpy menor a 2.4.
+onnxruntime==1.23.2
+numba==0.62.1
+llvmlite==0.45.1
+numpy<2.4

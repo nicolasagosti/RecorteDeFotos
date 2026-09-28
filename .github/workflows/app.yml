@@ -33,6 +33,7 @@ jobs:
           - so: macos-15-intel
             nombre: Mac-Intel
             ejecutable: dist/Recorte de Fotos.app/Contents/MacOS/RecorteDeFotos
+            restricciones: empaquetado/restricciones-mac-intel.txt
           # La versión de Linux más vieja disponible: el ejecutable funciona en esa y las más nuevas.
           - so: ubuntu-22.04
             nombre: Linux
@@ -45,7 +46,7 @@ jobs:
           python-version: "3.13"
 
       - name: Instalar dependencias
-        run: python -m pip install -r requirements.txt pyinstaller
+        run: python -m pip install -r requirements.txt pyinstaller ${{ matrix.restricciones && format('-c {0}', matrix.restricciones) || '' }}
 
       - name: Armar la app
         run: pyinstaller --noconfirm empaquetado/recorte-de-fotos.spec

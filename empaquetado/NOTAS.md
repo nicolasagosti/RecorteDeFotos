@@ -7,8 +7,8 @@ A diferencia de la [versión web](https://recorte-de-fotos.vercel.app), la app n
 | Tu compu | Archivo |
 | --- | --- |
 | Windows 10 u 11 | `RecorteDeFotos-Windows.zip` |
-| Mac con chip Apple (M1, M2, M3, M4…) | `RecorteDeFotos-Mac-AppleSilicon.zip` |
-| Mac con procesador Intel | `RecorteDeFotos-Mac-Intel.zip` |
+| Mac con chip Apple (M1, M2, M3, M4…), macOS 14 Sonoma o más nuevo | `RecorteDeFotos-Mac-AppleSilicon.zip` |
+| Mac con procesador Intel, macOS 14 Sonoma o más nuevo | `RecorteDeFotos-Mac-Intel.zip` |
 | Linux (Ubuntu 22.04, Debian 12, Fedora 36 o más nuevos) | `RecorteDeFotos-Linux.tar.gz` |
 
 ¿Tu Mac tiene chip Apple o Intel? Menú  → **Acerca de esta Mac**: dice "Chip Apple M…" o "Procesador Intel…".

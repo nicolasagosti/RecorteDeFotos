@@ -1,0 +1,96 @@
+# Arma la app para instalar en Windows, Mac (Apple Silicon e Intel) y Linux, la prueba en cada
+# sistema y, si se subió una etiqueta vX.Y.Z, la publica como versión en GitHub (Releases).
+# La página de Vercel enlaza siempre a la última versión publicada.
+#
+# Para publicar una versión nueva:  git tag v1.0.1 && git push origin v1.0.1
+# Para solo probar el armado (sin publicar): Actions → "App para instalar" → Run workflow.
+
+name: App para instalar
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  armar:
+    name: Armar (${{ matrix.nombre }})
+    runs-on: ${{ matrix.so }}
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - so: windows-latest
+            nombre: Windows
+            ejecutable: dist/RecorteDeFotos/RecorteDeFotos.exe
+          - so: macos-latest
+            nombre: Mac-AppleSilicon
+            ejecutable: dist/Recorte de Fotos.app/Contents/MacOS/RecorteDeFotos
+          - so: macos-15-intel
+            nombre: Mac-Intel
+            ejecutable: dist/Recorte de Fotos.app/Contents/MacOS/RecorteDeFotos
+          # La versión de Linux más vieja disponible: el ejecutable funciona en esa y las más nuevas.
+          - so: ubuntu-22.04
+            nombre: Linux
+            ejecutable: dist/RecorteDeFotos/RecorteDeFotos
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+
+      - name: Instalar dependencias
+        run: python -m pip install -r requirements.txt pyinstaller
+
+      - name: Armar la app
+        run: pyinstaller --noconfirm empaquetado/recorte-de-fotos.spec
+
+      - name: Probar la app
+        shell: bash
+        run: empaquetado/probar-app.sh "${{ matrix.ejecutable }}"
+
+      - name: Comprimir
+        shell: bash
+        run: |
+          cd dist
+          case "$RUNNER_OS" in
+            Windows) 7z a -tzip "../RecorteDeFotos-${{ matrix.nombre }}.zip" RecorteDeFotos > /dev/null ;;
+            # ditto conserva los enlaces y la firma que necesita una .app
+            macOS) ditto -c -k --sequesterRsrc --keepParent "Recorte de Fotos.app" "../RecorteDeFotos-${{ matrix.nombre }}.zip" ;;
+            Linux) tar czf "../RecorteDeFotos-${{ matrix.nombre }}.tar.gz" RecorteDeFotos ;;
+          esac
+          ls -lh ../RecorteDeFotos-*
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: RecorteDeFotos-${{ matrix.nombre }}
+          path: RecorteDeFotos-${{ matrix.nombre }}.*
+          if-no-files-found: error
+
+  publicar:
+    name: Publicar versión
+    needs: armar
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/download-artifact@v8
+        with:
+          path: paquetes
+          merge-multiple: true
+
+      - name: Crear la versión en GitHub
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ls -lh paquetes
+          gh release create "$GITHUB_REF_NAME" paquetes/* \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "Recorte de Fotos $GITHUB_REF_NAME" \
+            --notes-file empaquetado/NOTAS.md

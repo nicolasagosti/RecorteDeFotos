@@ -3,3 +3,6 @@
 modelos/
 __pycache__/
 *.pyc
+# Lo que genera PyInstaller al armar la app a mano (ver empaquetado/).
+build/
+dist/

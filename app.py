@@ -7,13 +7,16 @@ Opciones:
   --no-abrir     no abre el navegador
   --cerrar-solo  se cierra cuando no queda ninguna pestaña de la app abierta
                  (lo usa el ícono del menú, que no tiene terminal para hacer Ctrl+C)
+
+También se distribuye como app para instalar (PyInstaller, ver empaquetado/recorte-de-fotos.spec).
+Así siempre se cierra sola, porque se abre con doble clic y no tiene terminal.
 """
 
+import functools
 import io
 import json
 import logging
 import os
-import signal
 import sys
 import threading
 import time
@@ -21,15 +24,57 @@ import urllib.request
 import webbrowser
 from pathlib import Path
 
+EMPAQUETADA = getattr(sys, "frozen", False)
+if EMPAQUETADA:
+    import multiprocessing
+
+    # multiprocessing (lo usan numba y tqdm) lanza ayudantes volviendo a ejecutar la app.
+    # Esto los reconoce, hace su trabajo y termina; si no, cada uno abriría otra copia de la app.
+    multiprocessing.freeze_support()
+
 BASE_DIR = Path(__file__).resolve().parent
-# Los modelos se guardan dentro del proyecto, no en ~/.rembg.
-os.environ.setdefault("REMBG_HOME", str(BASE_DIR / "modelos"))
+# Empaquetada, la página viene adentro de la app (sys._MEIPASS).
+RECURSOS = Path(getattr(sys, "_MEIPASS", BASE_DIR))
+
+
+def carpeta_de_datos():
+    if sys.platform == "win32":
+        base = Path(os.getenv("LOCALAPPDATA") or Path.home() / "AppData" / "Local")
+    elif sys.platform == "darwin":
+        base = Path.home() / "Library" / "Application Support"
+    else:
+        base = Path(os.getenv("XDG_DATA_HOME") or Path.home() / ".local" / "share")
+    return base / "RecorteDeFotos"
+
+
+if EMPAQUETADA:
+    # La carpeta de la app puede no tener permiso de escritura: modelos y caché van a la del usuario.
+    DATOS = carpeta_de_datos()
+    DATOS.mkdir(parents=True, exist_ok=True)
+    # pymatting (lo usa rembg) compila con numba y por defecto guarda eso junto a su código.
+    os.environ.setdefault("NUMBA_CACHE_DIR", str(DATOS / "cache-numba"))
+    if sys.stdout is None or sys.stderr is None:  # sin consola (Windows): los mensajes, a un archivo
+        registro = open(DATOS / "registro.txt", "w", encoding="utf-8", buffering=1)
+        sys.stdout = sys.stdout or registro
+        sys.stderr = sys.stderr or registro
+else:
+    # Los modelos se guardan dentro del proyecto, no en ~/.rembg.
+    DATOS = BASE_DIR
+os.environ.setdefault("REMBG_HOME", str(DATOS / "modelos"))
 
 import flask.cli  # noqa: E402
 from flask import Flask, Response, jsonify, request, send_file  # noqa: E402
 from PIL import Image, UnidentifiedImageError  # noqa: E402
-from rembg import new_session, remove  # noqa: E402
-from rembg.sessions import sessions as SESIONES_REMBG  # noqa: E402
+
+
+@functools.cache
+def rembg():
+    # Importarlo tarda: la primera vez en una compu, ~30 s (numba compila pymatting).
+    # Por eso no se importa arriba: así la página se abre enseguida (ver main).
+    import rembg
+    import rembg.sessions
+
+    return rembg
 
 MODELOS = {
     "isnet-general-use": {
@@ -58,7 +103,7 @@ MODELO_POR_DEFECTO = "isnet-general-use"
 # Píxeles con alfa por debajo de esto no cuentan para "recortar al sujeto".
 UMBRAL_CAJA = 12
 
-app = Flask(__name__, static_folder=str(BASE_DIR / "static"), static_url_path="")
+app = Flask(__name__, static_folder=str(RECURSOS / "static"), static_url_path="")
 app.config["MAX_CONTENT_LENGTH"] = 60 * 1024 * 1024
 
 _sesiones = {}
@@ -67,14 +112,14 @@ _candado_sesiones = threading.Lock()
 
 def esta_descargado(modelo):
     archivo = f"{modelo}.onnx"
-    return SESIONES_REMBG[modelo].resolve_existing(archivo) is not None
+    return rembg().sessions.sessions[modelo].resolve_existing(archivo) is not None
 
 
 def obtener_sesion(modelo):
     # La primera vez descarga el modelo; el candado evita descargarlo dos veces.
     with _candado_sesiones:
         if modelo not in _sesiones:
-            _sesiones[modelo] = new_session(modelo)
+            _sesiones[modelo] = rembg().new_session(modelo)
         return _sesiones[modelo]
 
 
@@ -85,6 +130,12 @@ def error(mensaje, codigo=400):
 @app.get("/")
 def inicio():
     return app.send_static_file("index.html")
+
+
+@app.get("/api/estado")
+def estado():
+    # Responde enseguida (a diferencia de /api/modelos, que espera a rembg): ver ya_esta_abierta.
+    return jsonify({"app": "recorte-de-fotos"})
 
 
 @app.get("/api/modelos")
@@ -127,7 +178,7 @@ def quitar_fondo():
     except Exception as exc:  # sin internet, descarga cortada, etc.
         return error(f"No se pudo cargar el modelo «{MODELOS[modelo]['nombre']}»: {exc}", 503)
 
-    recorte = remove(imagen, session=sesion, decontaminate=limpiar_bordes)
+    recorte = rembg().remove(imagen, session=sesion, decontaminate=limpiar_bordes)
 
     alfa = recorte.getchannel("A").point(lambda a: 255 if a >= UMBRAL_CAJA else 0)
     caja = alfa.getbbox()  # None si el modelo no encontró ningún sujeto
@@ -205,14 +256,16 @@ def vigilar_pestanas():
         espera = ESPERA_SIN_PESTANAS if hubo_pestana else ESPERA_PRIMERA_PESTANA
         if ahora - vacio_desde >= espera:
             print("  No quedan pestañas abiertas: cerrando.", flush=True)
-            os.kill(os.getpid(), signal.SIGINT)  # igual que Ctrl+C: cierre ordenado
+            # No SIGINT: llega ignorada si la app se lanzó en segundo plano, y en Windows no es
+            # un Ctrl+C. No hay nada que guardar (las descargas de modelos se escriben aparte).
+            os._exit(0)
             return
 
 
 def ya_esta_abierta(url):
     try:
-        with urllib.request.urlopen(f"{url}/api/modelos", timeout=1) as respuesta:
-            return "modelos" in json.load(respuesta)
+        with urllib.request.urlopen(f"{url}/api/estado", timeout=2) as respuesta:
+            return json.load(respuesta).get("app") == "recorte-de-fotos"
     except Exception:
         return False
 
@@ -232,10 +285,14 @@ def main():
     logging.getLogger("werkzeug").setLevel(logging.ERROR)
     flask.cli.show_server_banner = lambda *args: None
     print(f"\n  Recorte de Fotos listo en {url}\n  (Ctrl+C para cerrar)\n", flush=True)
-    if "--cerrar-solo" in sys.argv:
+    threading.Thread(target=rembg, daemon=True).start()  # la página espera en /api/modelos
+    if "--cerrar-solo" in sys.argv or EMPAQUETADA:
         threading.Thread(target=vigilar_pestanas, daemon=True).start()
     if abrir:
-        threading.Timer(1.0, webbrowser.open, [url]).start()
+        # daemon: si el puerto está ocupado por otro programa, no abrir el navegador hacia ese programa.
+        temporizador = threading.Timer(1.0, webbrowser.open, [url])
+        temporizador.daemon = True
+        temporizador.start()
     app.run(host="127.0.0.1", port=puerto, threaded=True)
 
 

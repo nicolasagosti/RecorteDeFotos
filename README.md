@@ -10,7 +10,9 @@ Tiene dos formas de usarse, con la misma página:
   la primera vez y quedan guardados en el navegador. Usa la placa de video (WebGPU) si el navegador
   la ofrece; si no, el procesador (WebAssembly).
 - **Versión local** (Python): un servidor en tu compu con [rembg](https://github.com/danielgatis/rembg).
-  Es más rápida en computadoras sin WebGPU y acepta más formatos (BMP, TIFF).
+  Es más rápida en computadoras sin WebGPU, acepta más formatos (BMP, TIFF) y usa «Alta calidad» a
+  1024×1024, que no entra en la memoria de un navegador. Para otras personas se distribuye como
+  **app para instalar** en Windows, Mac y Linux (ver más abajo).
 
 La página elige sola: si la sirve `app.py`, usa Python; si no, procesa en el navegador.
 
@@ -65,7 +67,7 @@ Arrastrá fotos, elegilas con un clic o pegalas con Ctrl+V.
 ./instalar.sh
 ```
 
-Crea el entorno `.venv` e instala las dependencias (`rembg` y `flask`). Necesita Python 3.10 o más nuevo.
+Crea el entorno `.venv` e instala las dependencias (`rembg` y `flask`). Necesita Python 3.11 o más nuevo.
 
 ### Opciones
 
@@ -75,3 +77,37 @@ Crea el entorno `.venv` e instala las dependencias (`rembg` y `flask`). Necesita
 
 El ícono del menú está en `~/.local/share/applications/recorte-de-fotos.desktop`. Si movés esta
 carpeta, actualizá ahí las rutas (o borrá ese archivo para sacar el ícono).
+
+## App para instalar (Windows, Mac y Linux)
+
+Es la versión local empaquetada con [PyInstaller](https://pyinstaller.org): no hace falta tener Python.
+Se descarga desde [Releases](https://github.com/nicolasagosti/RecorteDeFotos/releases/latest), y la
+página de Vercel muestra los enlaces a la última versión. Las instrucciones de instalación para cada
+sistema están en `empaquetado/NOTAS.md`, que es el texto que acompaña cada versión.
+
+Empaquetada, guarda los modelos en la carpeta de datos del usuario (en Windows,
+`%LOCALAPPDATA%\RecorteDeFotos`) y se cierra sola al cerrar la pestaña.
+
+### Publicar una versión nueva
+
+```bash
+git tag v1.0.1
+git push origin v1.0.1
+```
+
+GitHub Actions (`.github/workflows/app.yml`) arma la app en cada sistema, la prueba con
+`empaquetado/probar-app.sh` y publica los cuatro archivos. Tarda unos 15 minutos. Para probar el
+armado sin publicar nada: pestaña **Actions** → **App para instalar** → **Run workflow**.
+
+La app no está firmada (requiere certificados pagos de Apple y de Microsoft): la primera vez,
+Windows y macOS muestran un aviso que se saltea como explica `empaquetado/NOTAS.md`.
+
+### Armarla a mano
+
+```bash
+pip install -r requirements.txt pyinstaller
+pyinstaller --noconfirm empaquetado/recorte-de-fotos.spec
+empaquetado/probar-app.sh dist/RecorteDeFotos/RecorteDeFotos
+```
+
+PyInstaller solo arma para el sistema en el que corre.

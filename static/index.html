@@ -67,7 +67,9 @@
     <aside class="panel" aria-label="Opciones">
       <section class="grupo">
         <h2>Cómo recortar</h2>
-        <div id="modelos" class="modelos" role="radiogroup" aria-label="Modelo"></div>
+        <div id="modelos" class="modelos" role="radiogroup" aria-label="Modelo">
+          <p class="nota-modelos">Cargando modelos…</p>
+        </div>
         <p id="nota-modelos" class="nota-modelos" hidden></p>
         <label class="casilla">
           <input id="limpiar-bordes" type="checkbox" checked>
@@ -106,6 +108,19 @@
             <small>Corta los bordes vacíos y deja un margen chico alrededor.</small>
           </span>
         </label>
+      </section>
+
+      <!-- Solo en la versión web: la app instalada no depende del navegador ni de su límite de memoria. -->
+      <section id="grupo-app" class="grupo" hidden>
+        <h2>App para tu compu</h2>
+        <p class="nota-app">Usa «Alta calidad» con toda la resolución y no depende del navegador. Tampoco sube tus fotos.</p>
+        <div class="descargas">
+          <a class="descarga" data-so="windows" href="https://github.com/nicolasagosti/RecorteDeFotos/releases/latest/download/RecorteDeFotos-Windows.zip">Windows</a>
+          <a class="descarga" data-so="linux" href="https://github.com/nicolasagosti/RecorteDeFotos/releases/latest/download/RecorteDeFotos-Linux.tar.gz">Linux</a>
+          <a class="descarga" data-so="mac" href="https://github.com/nicolasagosti/RecorteDeFotos/releases/latest/download/RecorteDeFotos-Mac-AppleSilicon.zip" title="Mac con chip Apple: M1, M2, M3…">Mac (chip M)</a>
+          <a class="descarga" data-so="mac" href="https://github.com/nicolasagosti/RecorteDeFotos/releases/latest/download/RecorteDeFotos-Mac-Intel.zip" title="Mac con procesador Intel">Mac (Intel)</a>
+        </div>
+        <a class="enlace-ayuda" href="https://github.com/nicolasagosti/RecorteDeFotos/releases/latest" target="_blank" rel="noopener">Cómo instalarla</a>
       </section>
 
       <section class="grupo grupo-acciones">

@@ -94,8 +94,22 @@ async function iniciarMotor() {
     mostrarAviso(e.message);
   }
   pintarModelos();
+  mostrarDescargas();
 }
 const motorListo = iniciarMotor();
+
+// En la web ofrece la app para instalar, resaltando la del sistema de quien mira.
+function mostrarDescargas() {
+  $("grupo-app").hidden = estado.motor?.tipo !== "navegador";
+  const plataforma = `${navigator.userAgentData?.platform || ""} ${navigator.userAgent}`;
+  const so = /Windows/i.test(plataforma) ? "windows"
+    : /Mac/i.test(plataforma) && !/iPhone|iPad/i.test(plataforma) ? "mac"
+    : /Linux/i.test(plataforma) && !/Android/i.test(plataforma) ? "linux"
+    : null;
+  for (const enlace of document.querySelectorAll(".descarga")) {
+    enlace.classList.toggle("sugerida", enlace.dataset.so === so);
+  }
+}
 
 function pintarModelos() {
   const nota = $("nota-modelos");

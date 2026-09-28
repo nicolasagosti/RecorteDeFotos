@@ -399,7 +399,7 @@ async function procesar({ bitmap, modelo: idModelo, limpiarBordes }, avisar) {
 
 function mensajeDeError(e) {
   const texto = String(e?.message || e);
-  if (/memory|allocat|Aborted|out of bounds/i.test(texto)) {
+  if (/memory|alloc|Aborted|out of bounds/i.test(texto)) {
     return "Esta foto es demasiado grande para este dispositivo. Probá con una más chica o con el modelo General.";
   }
   return e instanceof Error && !/^\w+Error:|onnx|ort/i.test(texto) ? texto : `No se pudo procesar la foto (${texto}).`;

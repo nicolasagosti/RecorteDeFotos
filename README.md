@@ -30,7 +30,7 @@ Cada `git push` a `main` vuelve a publicar la página.
 | Modelo          | Archivo (Hugging Face)                                                            | Licencia   |
 | --------------- | --------------------------------------------------------------------------------- | ---------- |
 | General         | [Ko033/isnet-general-use-onnx](https://huggingface.co/Ko033/isnet-general-use-onnx) (ISNet) | Apache-2.0 |
-| Alta calidad    | [onnx-community/BiRefNet_lite-ONNX](https://huggingface.co/onnx-community/BiRefNet_lite-ONNX) | MIT        |
+| Alta calidad    | [studioludens/birefnet-lite-512](https://huggingface.co/studioludens/birefnet-lite-512) (BiRefNet lite a 512×512; la de 1024 no entra en la memoria de un navegador) | MIT        |
 | Personas        | [Xenova/modnet](https://huggingface.co/Xenova/modnet)                              | Apache-2.0 |
 | Dibujos y anime | [skytnt/anime-seg](https://huggingface.co/skytnt/anime-seg)                        | Apache-2.0 |
 

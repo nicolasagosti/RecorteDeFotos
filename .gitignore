@@ -1,0 +1,5 @@
+# Entorno de Python y modelos descargados: se recrean con ./instalar.sh y al usar la app.
+.venv/
+modelos/
+__pycache__/
+*.pyc

@@ -1,0 +1,4 @@
+# Vercel solo publica la página (static/). La app de Python es para correrla en tu compu.
+/*
+!static
+!vercel.json

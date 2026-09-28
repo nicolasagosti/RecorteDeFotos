@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Recorte de Fotos</title>
+  <link rel="icon" href="icono.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="cabecera">
+    <div class="marca">
+      <svg class="marca-icono" viewBox="0 0 32 32" aria-hidden="true">
+        <rect width="32" height="32" rx="8" fill="currentColor"/>
+        <circle cx="11" cy="22" r="4" fill="none" stroke="#fff" stroke-width="2.5"/>
+        <circle cx="21" cy="22" r="4" fill="none" stroke="#fff" stroke-width="2.5"/>
+        <path d="M13.5 19 23 6M18.5 19 9 6" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/>
+      </svg>
+      <h1>Recorte de Fotos</h1>
+    </div>
+    <p class="lema">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 4 6v6c0 4.5 3.4 8.3 8 9 4.6-.7 8-4.5 8-9V6l-8-3Z"/><path d="m9 12 2 2 4-4"/></svg>
+      Tus fotos no salen de tu dispositivo
+    </p>
+  </header>
+
+  <main class="app">
+    <section class="visor" aria-label="Vista de la foto">
+      <button id="zona-vacia" class="zona-vacia" type="button">
+        <span class="zona-icono">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V4m0 0-4.5 4.5M12 4l4.5 4.5"/><path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></svg>
+        </span>
+        <span class="zona-titulo">Arrastrá tus fotos acá</span>
+        <span class="zona-sub">o hacé clic para elegirlas · también podés pegar con <kbd>Ctrl</kbd>+<kbd>V</kbd></span>
+        <span class="zona-formatos">JPG · PNG · WEBP — podés cargar varias a la vez</span>
+      </button>
+
+      <div id="escenario" class="escenario" hidden>
+        <div class="visor-barra">
+          <div class="segmentado" role="radiogroup" aria-label="Modo de vista">
+            <button type="button" role="radio" data-vista="resultado" aria-checked="true">Resultado</button>
+            <button type="button" role="radio" data-vista="comparar" aria-checked="false">Antes / después</button>
+          </div>
+          <span id="nombre-actual" class="nombre-actual"></span>
+        </div>
+
+        <div id="escena" class="escena">
+          <div id="marco" class="marco">
+            <canvas id="lienzo-despues" class="lienzo tablero"></canvas>
+            <canvas id="lienzo-antes" class="lienzo lienzo-antes"></canvas>
+            <div class="divisor" aria-hidden="true"><span></span></div>
+            <span class="etiqueta etiqueta-antes">Antes</span>
+            <span class="etiqueta etiqueta-despues">Después</span>
+            <input id="deslizador" class="deslizador" type="range" min="0" max="100" value="50" aria-label="Comparar antes y después">
+            <div id="estado-foto" class="estado-foto" hidden>
+              <div class="estado-caja">
+                <span class="girador" aria-hidden="true"></span>
+                <p id="estado-texto" class="estado-texto" role="status" aria-live="polite"></p>
+                <button id="reintentar" class="boton boton-secundario" type="button" hidden>Reintentar</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <aside class="panel" aria-label="Opciones">
+      <section class="grupo">
+        <h2>Cómo recortar</h2>
+        <div id="modelos" class="modelos" role="radiogroup" aria-label="Modelo"></div>
+        <p id="nota-modelos" class="nota-modelos" hidden></p>
+        <label class="casilla">
+          <input id="limpiar-bordes" type="checkbox" checked>
+          <span>
+            <strong>Limpiar halo de color</strong>
+            <small>Saca el borde del color del fondo viejo que queda alrededor del pelo y los bordes suaves.</small>
+          </span>
+        </label>
+        <button id="reprocesar" class="boton boton-secundario ancho" type="button" hidden>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg>
+          Volver a procesar
+        </button>
+      </section>
+
+      <section class="grupo">
+        <h2>Fondo nuevo</h2>
+        <div id="fondos" class="fondos" role="radiogroup" aria-label="Fondo">
+          <button type="button" role="radio" data-fondo="transparente" class="muestra muestra-transparente" aria-label="Transparente" title="Transparente"></button>
+          <button type="button" role="radio" data-fondo="blanco" class="muestra" style="--m:#ffffff" aria-label="Blanco" title="Blanco"></button>
+          <button type="button" role="radio" data-fondo="negro" class="muestra" style="--m:#000000" aria-label="Negro" title="Negro"></button>
+          <button type="button" role="radio" data-fondo="desenfocado" class="muestra muestra-desenfocado" aria-label="Foto original desenfocada" title="Foto original desenfocada"></button>
+          <label class="muestra muestra-color" title="Otro color">
+            <input id="color-propio" type="color" value="#3b82f6" aria-label="Elegir color">
+            <span class="muestra-color-punto"></span>
+          </label>
+        </div>
+        <p id="fondo-nombre" class="fondo-nombre">Transparente</p>
+      </section>
+
+      <section class="grupo">
+        <h2>Encuadre</h2>
+        <label class="casilla">
+          <input id="recortar" type="checkbox">
+          <span>
+            <strong>Ajustar al sujeto</strong>
+            <small>Corta los bordes vacíos y deja un margen chico alrededor.</small>
+          </span>
+        </label>
+      </section>
+
+      <section class="grupo grupo-acciones">
+        <button id="descargar" class="boton boton-primario ancho" type="button" disabled>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v12m0 0-4.5-4.5M12 16l4.5-4.5"/><path d="M4 18v1a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-1"/></svg>
+          Descargar PNG
+        </button>
+        <button id="descargar-todas" class="boton boton-secundario ancho" type="button" hidden>Descargar todas</button>
+        <p id="tamano" class="tamano"></p>
+      </section>
+    </aside>
+
+    <section class="tira" aria-label="Fotos cargadas">
+      <ul id="miniaturas" class="miniaturas"></ul>
+      <button id="agregar" class="miniatura-agregar" type="button" title="Agregar fotos" aria-label="Agregar fotos">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+      </button>
+    </section>
+  </main>
+
+  <div id="soltar" class="soltar" hidden>
+    <div class="soltar-caja">Soltá las fotos para quitarles el fondo</div>
+  </div>
+  <div id="aviso" class="aviso" role="alert" hidden></div>
+  <input id="selector" type="file" accept="image/*" multiple hidden>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
